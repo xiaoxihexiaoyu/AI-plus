@@ -59,7 +59,7 @@ ai-ecommerce-webapp/
 ### 1\. 克隆仓库
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/Eyre921/AI-plus
 cd ai-ecommerce-webapp
 ```
 
