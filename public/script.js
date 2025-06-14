@@ -69,7 +69,7 @@ function buildDynamicLists() {
         CONFIG.header.navLinks.forEach(linkText => {
             const link = document.createElement('a');
             link.href = `#${getLinkTarget(linkText)}`;
-            link.className = 'hover:text-sky-600 transition-colors';
+            link.className = 'hover:text-blue-400 transition-colors';
             link.textContent = linkText;
             // Insert before the contact button
             navLinksContainer.insertBefore(link, navLinksContainer.querySelector('a[href="#contact"]'));
@@ -94,9 +94,15 @@ function buildDynamicLists() {
     const metricsGrid = document.getElementById('metrics-grid');
     if (metricsGrid && CONFIG.credibility?.metrics) {
         metricsGrid.innerHTML = CONFIG.credibility.metrics.map(m => `
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <p class="text-5xl font-bold text-sky-600 counter" data-target="${m.target}">0</p>
-                <p class="text-slate-500 mt-2">${m.label}</p>
+            <div class="glass-component">
+                <div class="glass-effect"></div>
+                <div class="glass-tint"></div>
+                <div class="glass-shine"></div>
+                <div class="glass-content">
+                    <p class="text-5xl font-bold text-blue-400 counter" data-target="${m.target}">0</p>
+                    <p class="text-white/70 mt-2">${m.label}</p>
+                </div>
+                <div class="click-gradient"></div>
             </div>
         `).join('');
         initCounterObserver(); // Re-initialize observer for new counters
@@ -107,12 +113,14 @@ function buildDynamicLists() {
     if (compassControls && CONFIG.compass?.dimensions) {
         compassControls.innerHTML = CONFIG.compass.dimensions.map((dim, index) => `
             <div>
-                <h3 class="font-bold text-lg mb-2 flex items-center"><span class="text-sky-500 text-2xl mr-2">${index + 1}</span> ${dim.title}</h3>
-                <p class="text-sm text-slate-500 mb-3">${dim.desc}</p>
+                <h3 class="font-bold text-lg mb-2 flex items-center"><span class="text-blue-400 text-2xl mr-2">${index + 1}</span> ${dim.title}</h3>
+                <p class="text-sm text-white/70 mb-3">${dim.desc}</p>
                 <div class="flex flex-wrap gap-3">
                     ${dim.options.map(opt => `
                         <div class="tooltip-container">
-                            <button class="compass-btn px-4 py-2 rounded-md text-sm font-medium bg-white text-slate-700 border border-slate-300 hover:border-sky-500 hover:text-sky-600" data-dimension="${dim.id}" data-value="${opt.value}">${opt.value}</button>
+                            <button class="compass-btn px-4 py-2 rounded-full text-sm font-medium hover:text-blue-400" data-dimension="${dim.id}" data-value="${opt.value}">
+                                ${opt.value}
+                            </button>
                             <span class="tooltip-text">${opt.tooltip}</span>
                         </div>
                     `).join('')}
@@ -125,18 +133,33 @@ function buildDynamicLists() {
     const moduleFilters = document.getElementById('module-filters');
     if (moduleFilters && CONFIG.modules?.filters) {
         moduleFilters.innerHTML = CONFIG.modules.filters.map((f, index) => `
-            <button class="filter-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border ${index === 0 ? 'active !bg-sky-600 !text-white !border-sky-600' : 'bg-white text-slate-600 border-slate-300 hover:bg-sky-100'}" data-filter="${f.id}">${f.label}</button>
+            <button class="filter-btn liquid-glass-btn" data-filter="${f.id}">
+                <div class="liquid-glass-effect"></div>
+                <div class="liquid-glass-tint"></div>
+                <div class="liquid-glass-shine"></div>
+                <div class="liquid-glass-content !py-2 !px-4 !text-sm !font-medium">
+                    ${f.label}
+                </div>
+                <div class="click-gradient"></div>
+            </button>
         `).join('');
     }
 
-    // Process Steps
+    // Process Steps - 从浅到深的蓝色
     const processSteps = document.getElementById('process-steps');
     if (processSteps && CONFIG.process?.steps) {
+        const blueColors = ['#63B3ED', '#4299E1', '#3182CE', '#2B6CB0']; // 从浅到深的蓝色
         processSteps.innerHTML = CONFIG.process.steps.map((step, index) => `
-            <div class="process-step">
-                <div class="text-4xl font-bold text-sky-${200 + index * 100}">0${index + 1}</div>
-                <h4 class="font-bold mt-2">${step.title}</h4>
-                <p class="text-sm text-slate-500 mt-1">${step.desc}</p>
+            <div class="process-step glass-component">
+                <div class="glass-effect"></div>
+                <div class="glass-tint"></div>
+                <div class="glass-shine"></div>
+                <div class="glass-content">
+                    <div class="text-4xl font-bold" style="color: ${blueColors[index]};">${index + 1 < 10 ? '0' + (index + 1) : index + 1}</div>
+                    <h4 class="font-bold mt-2">${step.title}</h4>
+                    <p class="text-sm text-white/70 mt-1">${step.desc}</p>
+                </div>
+                <div class="click-gradient"></div>
             </div>
         `).join('');
     }
@@ -254,205 +277,350 @@ function initializeEventListeners() {
 // --- Feature-Specific Logic ---
 
 function initCompass() {
-    const compassControls = document.getElementById('compass-controls');
+    const buttons = document.querySelectorAll('.compass-btn');
+    const generateBtn = document.getElementById('generate-recommendation-btn');
+    const recommendationOutput = document.getElementById('recommendation-output');
     const recPlaceholder = document.getElementById('recommendation-placeholder');
     const recLoading = document.getElementById('recommendation-loading');
     const recDetails = document.getElementById('recommendation-details');
     const recError = document.getElementById('recommendation-error');
-    const recErrorMsg = document.getElementById('recommendation-error-msg');
     const recFocus = document.getElementById('rec-focus');
     const recContent = document.getElementById('rec-content');
     const recCombo = document.getElementById('rec-combo');
-    const generateBtn = document.getElementById('generate-recommendation-btn');
-    const generateSpinner = document.getElementById('generate-recommendation-spinner');
+    
+    // Store user selections
+    const userSelections = {};
+    
+    // Initialize chart
+    const ctx = document.getElementById('recommendationChart').getContext('2d');
+    
+    // Setup initial empty chart
+    updateChartData({
+        labels: ['营销效能', '运营效率', '战略高度'],
+        datasets: [{
+            data: [0, 0, 0],
+            backgroundColor: 'rgba(0, 119, 237, 0.2)',
+            borderColor: 'rgba(0, 119, 237, 0.8)',
+            borderWidth: 2,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: 'rgba(0, 119, 237, 0.8)',
+            pointHoverBackgroundColor: '#ffffff',
+            pointHoverBorderColor: 'rgba(0, 119, 237, 1)',
+            pointRadius: 4,
+            pointHoverRadius: 6
+        }]
+    });
+    
+    // Handle button clicks
+    buttons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const dimension = this.dataset.dimension;
+            const value = this.dataset.value;
+            
+            // Remove active class from all buttons in this dimension
+            document.querySelectorAll(`.compass-btn[data-dimension="${dimension}"]`).forEach(b => {
+                b.classList.remove('active');
+            });
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Store selection
+            userSelections[dimension] = value;
+        });
+    });
 
-    const selections = { scale: null, audience: null, depth: null, duration: null, format: null };
-    const scoreData = {
-        scale: { '小微企业': [1, 5, 4], '中型企业': [3, 4, 3], '大型企业': [5, 2, 3] },
-        audience: { '决策层/高管': [5, 1, 1], '运营/执行层': [1, 5, 4], '全体员工': [2, 3, 2] },
-        depth: { '认知普及': [3, 1, 1], '工具应用': [1, 5, 4], '战略整合': [5, 2, 3] },
-    };
-
-    const updateChart = () => {
-        if (!Object.values(selections).every(val => val !== null)) {
-            updateChartData([2, 2, 2]);
-            return;
-        }
-
-        try {
-            let combinedScores = [0, 0, 0];
-            const scaleScores = scoreData.scale[selections.scale];
-            const audienceScores = scoreData.audience[selections.audience];
-            const depthScores = scoreData.depth[selections.depth];
-            for(let i=0; i<3; i++) combinedScores[i] = (scaleScores[i] + audienceScores[i] + depthScores[i]) / 3;
-            if (selections.duration === '长期顾问' || selections.depth === '战略整合') combinedScores[0] = Math.min(6, combinedScores[0] + 1);
-            if (selections.duration === '两天' || selections.depth === '工具应用') combinedScores[1] = Math.min(6, combinedScores[1] + 1.5);
-            if (selections.scale === '小微企业' || selections.depth === '工具应用') combinedScores[2] = Math.min(6, combinedScores[2] + 1);
-            updateChartData(combinedScores);
-        } catch(e) {
-            console.error("Error calculating scores: ", e);
-            updateChartData([2,2,2]);
-        }
-    };
-
+    // 特殊处理format维度的按钮样式
+    document.querySelectorAll('.compass-btn[data-dimension="format"]').forEach(btn => {
+        btn.style.minWidth = '120px';
+        btn.style.textAlign = 'center';
+    });
+    
+    // Generate recommendation
     const generateRecommendation = async () => {
-        // 检查是否所有维度都已选择
-        if (!Object.values(selections).every(val => val !== null)) {
-            recError.classList.remove('hidden');
-            recErrorMsg.textContent = '请先完成所有维度的选择';
-            setTimeout(() => {
-                recError.classList.add('hidden');
-            }, 3000);
+        // Check if all dimensions are selected
+        const dimensions = CONFIG.compass?.dimensions || [];
+        const allSelected = dimensions.every(dim => userSelections[dim.id]);
+        
+        if (!allSelected) {
+            alert('请完成所有五个维度的选择');
             return;
         }
-
+        
+        // Show loading state
         recPlaceholder.classList.add('hidden');
         recDetails.classList.add('hidden');
         recError.classList.add('hidden');
         recLoading.classList.remove('hidden');
-        generateBtn.disabled = true;
-        generateSpinner.classList.remove('hidden');
-
-        const prompt = `你是一位顶级的AI+电商培训方案专家。一位潜在客户提供了以下信息：
-        - 企业规模: ${selections.scale}, 培训对象: ${selections.audience}, 期望内容深度: ${selections.depth}, 期望时间长度: ${selections.duration}, 期望培训形式: ${selections.format}
-        请基于以上信息，为客户生成一份专业、精炼、且富有洞察力的初步培训方案建议。
-        你的回答必须是一个严格的JSON对象，包含三个键："focus", "content", "combination"。所有值都必须是字符串，内容必须使用简体中文。
-        "focus" (建议焦点): 一针见血地分析该类型客户的核心痛点和首要目标。
-        "content" (内容侧重): 具体阐述培训内容应该侧重于哪些方面。
-        "combination" (推荐组合): 给出一个具体的、有吸引力的培训包名称或描述。`;
-
+        
         try {
-            const parsedJson = await callBackendProxy(prompt, true);
-            recFocus.innerHTML = parsedJson.focus;
-            recContent.innerHTML = parsedJson.content;
-            recCombo.innerHTML = parsedJson.combination;
+            // Simulate AI processing with a delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Generate a deterministic recommendation based on selections
+            const recommendation = generateDeterministicRecommendation(userSelections);
+            
+            // Update UI with recommendation
+            recFocus.textContent = recommendation.focus;
+            recContent.textContent = recommendation.content;
+            recCombo.textContent = recommendation.combo;
+            
+            // Update chart
+            updateChartData({
+                labels: ['营销效能', '运营效率', '战略高度'],
+                datasets: [{
+                    data: recommendation.chartData,
+                    backgroundColor: 'rgba(0, 119, 237, 0.2)',
+                    borderColor: 'rgba(0, 119, 237, 0.8)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: 'rgba(0, 119, 237, 0.8)',
+                    pointHoverBackgroundColor: '#ffffff',
+                    pointHoverBorderColor: 'rgba(0, 119, 237, 1)',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            });
+            
+            // Show recommendation
             recLoading.classList.add('hidden');
             recDetails.classList.remove('hidden');
         } catch (error) {
-            console.error("Error fetching compass recommendation:", error);
-            recErrorMsg.textContent = error.message.includes('API配置不完整') ? error.message : CONFIG.compass.resultCard.error;
+            console.error('Error generating recommendation:', error);
             recLoading.classList.add('hidden');
             recError.classList.remove('hidden');
-        } finally {
-            generateBtn.disabled = false;
-            generateSpinner.classList.add('hidden');
         }
     };
+    
+    // Simple deterministic recommendation generator
+    const generateDeterministicRecommendation = (selections) => {
+        // Map scale to focus area
+        const scaleMap = {
+            '小微企业': '建议聚焦于快速提升营销效能，以最小成本获取最大效果。',
+            '中型企业': '建议聚焦于运营流程优化，提升人效和组织协同能力。',
+            '大型企业': '建议聚焦于战略层面的AI整合，构建企业级数据与AI能力。'
+        };
+        
+        // Map audience to content emphasis
+        const audienceMap = {
+            '决策层/高管': '内容应以战略视野和变革管理为主，辅以实际案例分析。',
+            '运营/执行层': '内容应以实操工具和流程优化为主，强调即学即用。',
+            '全体员工': '内容应兼顾AI认知普及和基础工具应用，培养全员AI思维。'
+        };
+        
+        // Generate combo recommendation based on depth and duration
+        const getCombo = (depth, duration) => {
+            if (depth === '认知普及' && duration === '半天') {
+                return '推荐"AI时代的电商顶层设计"+"AIGC重塑品牌内容生态"组合。';
+            } else if (depth === '工具应用' && (duration === '一天' || duration === '两天')) {
+                return '推荐"AI驱动爆款文案与Listing优化"+"Midjourney/SD商业级视觉应用"+"AI客服与售后流程自动化"组合。';
+            } else if (depth === '战略整合' && duration === '长期顾问') {
+                return '推荐完整的"AI赋能电商增长引擎"体系，包含战略、工具、流程三大模块的全面整合。';
+            } else {
+                return '推荐根据您的具体业务场景，定制3-5个核心模块的组合方案。';
+            }
+        };
+        
+        // Generate chart data based on selections
+        const chartData = [
+            selections.scale === '小微企业' ? 90 : (selections.scale === '中型企业' ? 70 : 50),
+            selections.audience === '运营/执行层' ? 90 : (selections.audience === '全体员工' ? 70 : 50),
+            selections.depth === '战略整合' ? 90 : (selections.depth === '工具应用' ? 50 : 30)
+        ];
+        
+        return {
+            focus: scaleMap[selections.scale] || '建议聚焦于整体AI能力提升，平衡战略与执行。',
+            content: audienceMap[selections.audience] || '内容应平衡理论与实践，覆盖多层级人员需求。',
+            combo: getCombo(selections.depth, selections.duration),
+            chartData
+        };
+    };
+    
+    // Add event listener to generate button
+    generateBtn.addEventListener('click', generateRecommendation);
+}
 
-    compassControls.addEventListener('click', (e) => {
-        if (e.target.classList.contains('compass-btn')) {
-            const { dimension, value } = e.target.dataset;
-            selections[dimension] = value;
-            document.querySelectorAll(`.compass-btn[data-dimension="${dimension}"]`).forEach(btn => btn.classList.remove('active'));
-            e.target.classList.add('active');
-            updateChart(); // 仅更新图表，不生成方案
+function updateChartData(data) {
+    // If chart exists, destroy it before creating a new one
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+    
+    // Create new chart
+    const ctx = document.getElementById('recommendationChart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        display: false,
+                        stepSize: 20
+                    },
+                    pointLabels: {
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        font: {
+                            size: 14,
+                            family: "'Noto Sans SC', sans-serif"
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    angleLines: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    titleFont: {
+                        size: 14,
+                        family: "'Noto Sans SC', sans-serif"
+                    },
+                    bodyFont: {
+                        size: 13,
+                        family: "'Noto Sans SC', sans-serif"
+                    },
+                    padding: 10,
+                    displayColors: false
+                }
+            }
         }
     });
-
-    // 添加生成按钮的点击事件
-    generateBtn.addEventListener('click', generateRecommendation);
-
-    // 初始化图表
-    updateChart();
 }
 
-
-// 修改图表更新函数名称，以避免冲突
-function updateChartData(data) {
-    const chartData = {
-        labels: ['战略思维', '工具应用', '效率提升'],
-        datasets: [{
-            label: '方案侧重点', data: data, backgroundColor: 'rgba(56, 189, 248, 0.2)',
-            borderColor: 'rgba(2, 132, 199, 1)', borderWidth: 2, pointBackgroundColor: 'rgba(2, 132, 199, 1)',
-        }]
-    };
-    if (chartInstance) {
-        chartInstance.data = chartData;
-        chartInstance.update();
-    } else {
-        const ctx = document.getElementById('recommendationChart').getContext('2d');
-        if(!ctx) return;
-        chartInstance = new Chart(ctx, {
-            type: 'radar', data: chartData,
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { r: {
-                    angleLines: { color: 'rgba(0, 0, 0, 0.1)' }, grid: { color: 'rgba(0, 0, 0, 0.1)' },
-                    pointLabels: { font: { size: 14, family: "'Noto Sans SC', sans-serif" } },
-                    suggestedMin: 0, suggestedMax: 6,
-                    ticks: { stepSize: 1, backdropColor: 'rgba(255, 255, 255, 0.75)' }
-                }},
-                plugins: { legend: { display: false }, tooltip: { enabled: false } }
-            }
-        });
-    }
+/**
+ * Initializes the click effect for glass components.
+ */
+function initGlassEffects() {
+    const glassComponents = document.querySelectorAll('.glass-component');
+    
+    glassComponents.forEach(el => {
+        const gradientEl = el.querySelector('.click-gradient');
+        if (gradientEl) {
+            el.addEventListener('mousedown', function(e) {
+                const rect = el.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                gradientEl.style.left = `${x}px`;
+                gradientEl.style.top = `${y}px`;
+                gradientEl.style.width = `${el.offsetWidth * 2}px`;
+                gradientEl.style.height = `${el.offsetWidth * 2}px`;
+                
+                el.classList.add('clicked');
+                setTimeout(() => {
+                    el.classList.remove('clicked');
+                }, 600);
+            });
+        }
+    });
 }
-
 
 function initModules() {
     const moduleGrid = document.getElementById('module-grid');
-    const filterContainer = document.getElementById('module-filters');
-    const moduleModal = document.getElementById('module-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalLoading = document.getElementById('modal-loading');
-    const modalTextContent = document.getElementById('modal-text-content');
-    const modalError = document.getElementById('modal-error');
-    const modalErrorMsg = document.getElementById('modal-error-msg');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    
+    if (!moduleGrid || !CONFIG.modules?.list) return;
 
     const renderModules = (filter = 'all') => {
-        if (!CONFIG.modules?.list) return;
-        moduleGrid.innerHTML = '';
-        const filteredData = filter === 'all' ? CONFIG.modules.list : CONFIG.modules.list.filter(m => m.category === filter);
-        filteredData.forEach(m => {
-            const card = document.createElement('div');
-            card.className = 'module-card';
-            card.innerHTML = `<div class="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
-                    <h4 class="font-bold text-lg text-${m.color}-700">${m.title}</h4>
-                    <p class="text-sm text-slate-500 mt-2 flex-grow">${m.desc}</p>
-                    <div class="text-right mt-4">
-                        <button class="ai-deep-dive-btn text-sm text-sky-600 font-semibold hover:text-sky-800 transition-colors" data-title="${m.title}" data-desc="${m.desc}" data-details="${m.details || ''}">
-                            ${CONFIG.modules.modal.deepDiveBtn}
-                        </button>
-                    </div>
-                </div>`;
-            moduleGrid.appendChild(card);
+        const modules = filter === 'all' 
+            ? CONFIG.modules.list 
+            : CONFIG.modules.list.filter(m => m.category === filter);
+        
+        moduleGrid.innerHTML = modules.map(module => `
+            <div class="glass-component feature-card" data-content="${module.category}-${module.title.replace(/\s+/g, '-').toLowerCase()}">
+                <div class="glass-effect"></div>
+                <div class="glass-tint"></div>
+                <div class="glass-shine"></div>
+                <div class="glass-content">
+                    <h3 class="text-xl font-bold mb-2">${module.title}</h3>
+                    <p class="text-white/70 text-sm mb-4">${module.desc}</p>
+                    <div class="text-blue-400 text-sm font-medium">查看详情 →</div>
+                </div>
+                <div class="click-gradient"></div>
+            </div>
+        `).join('');
+
+        // Initialize module click handlers
+        document.querySelectorAll('#module-grid .glass-component').forEach(card => {
+            card.addEventListener('click', function() {
+                const contentId = this.dataset.content;
+                const moduleId = contentId.split('-')[1]; // Get the category
+                const module = CONFIG.modules.list.find(m => 
+                    contentId === `${m.category}-${m.title.replace(/\s+/g, '-').toLowerCase()}`
+                );
+                
+                if (module) {
+                    const modal = document.getElementById('module-modal');
+                    const modalTitle = document.getElementById('modal-title');
+                    const modalTextContent = document.getElementById('modal-text-content');
+                    const modalLoading = document.getElementById('modal-loading');
+                    const modalError = document.getElementById('modal-error');
+                    
+                    modalTitle.textContent = module.title;
+                    modalTextContent.classList.add('hidden');
+                    modalLoading.classList.remove('hidden');
+                    modalError.classList.add('hidden');
+                    modal.classList.add('visible');
+                    
+                    // Show content directly from config
+                    setTimeout(() => {
+                        modalLoading.classList.add('hidden');
+                        modalTextContent.innerHTML = module.details;
+                        modalTextContent.classList.remove('hidden');
+                    }, 500);
+                }
+            });
         });
+
+        // Re-initialize glass effects
+        initGlassEffects();
     };
 
-    filterContainer.addEventListener('click', (e) => {
-        if (e.target.classList.contains('filter-btn')) {
-            const filter = e.target.dataset.filter;
-            filterContainer.querySelector('.filter-btn.active').classList.remove('active');
-            e.target.classList.add('active');
-            renderModules(filter);
-        }
+    // Initial render
+    renderModules();
+    
+    // Set the first filter button as active by default
+    const firstFilter = document.querySelector('.filter-btn');
+    if (firstFilter) {
+        firstFilter.classList.add('active');
+    }
+    
+    // Filter button event listeners
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            filterButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            renderModules(this.dataset.filter);
+        });
     });
-
-    moduleGrid.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('ai-deep-dive-btn')) {
-            const { title, desc, details } = e.target.dataset;
-            moduleModal.classList.add('visible');
-            modalTitle.textContent = title;
-            modalTextContent.classList.add('hidden');
-            modalError.classList.add('hidden');
-            modalLoading.classList.add('hidden');
-            
-            // 直接显示静态内容，不调用AI生成
-            if (details) {
-                modalTextContent.textContent = details;
-                modalTextContent.classList.remove('hidden');
-            } else {
-                // 如果没有预设详情，显示课程描述
-                modalTextContent.textContent = desc;
-                modalTextContent.classList.remove('hidden');
+    
+    // Modal close button
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modal = document.getElementById('module-modal');
+    
+    if (modalCloseBtn && modal) {
+        modalCloseBtn.addEventListener('click', () => {
+            modal.classList.remove('visible');
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('visible');
             }
-        }
-    });
-
-    document.getElementById('modal-close-btn').addEventListener('click', () => moduleModal.classList.remove('visible'));
-    moduleModal.addEventListener('click', (e) => { if (e.target === moduleModal) moduleModal.classList.remove('visible'); });
-
-    renderModules(); // Initial render
+        });
+    }
 }
 
 function initContactForm() {
@@ -495,14 +663,75 @@ function initContactForm() {
 }
 
 
+/**
+ * 初始化高级液态玻璃按钮效果
+ */
+function initLiquidGlassButtons() {
+    const liquidButtons = document.querySelectorAll('.liquid-glass-btn');
+    
+    liquidButtons.forEach(btn => {
+        // 添加点击波纹效果
+        const gradientEl = btn.querySelector('.click-gradient');
+        if (gradientEl) {
+            btn.addEventListener('mousedown', function(e) {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                gradientEl.style.left = `${x}px`;
+                gradientEl.style.top = `${y}px`;
+                gradientEl.style.width = `${btn.offsetWidth * 3}px`;
+                gradientEl.style.height = `${btn.offsetWidth * 3}px`;
+                
+                btn.classList.add('clicked');
+                setTimeout(() => {
+                    btn.classList.remove('clicked');
+                }, 800);
+            });
+        }
+    });
+}
+
 // --- Main Application Entry Point ---
 async function main() {
-    CONFIG = await fetchConfig();
-    if (!CONFIG) return;
+    try {
+        CONFIG = await fetchConfig();
+        if (!CONFIG) return;
 
-    populateContent();
-    initializeEventListeners();
-    initFadeInObserver();
+        populateContent();
+        initFadeInObserver();
+        initCompass();
+        initModules();
+        initContactForm();
+        initGlassEffects(); // Initialize glass effects
+        initLiquidGlassButtons(); // Initialize liquid glass buttons
+        
+        // 监听窗口滚动，为已进入视口的元素添加可见性类
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    
+                    // 如果是新的组件进入视口，重新初始化玻璃效果
+                    if (entry.target.querySelectorAll('.glass-component').length > 0) {
+                        initGlassEffects();
+                    }
+                    
+                    // 如果有液态玻璃按钮，也需要初始化
+                    if (entry.target.querySelectorAll('.liquid-glass-btn').length > 0) {
+                        initLiquidGlassButtons();
+                    }
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        // 观察所有需要淡入效果的部分
+        document.querySelectorAll('.section-fade-in').forEach(section => {
+            observer.observe(section);
+        });
+    } catch (error) {
+        console.error("Error initializing application:", error);
+    }
 }
 
 // Run the application

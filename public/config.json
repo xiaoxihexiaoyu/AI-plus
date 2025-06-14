@@ -1,13 +1,13 @@
 {
   "header": {
-    "brandName": "AI+电商增长引擎",
+    "brandName": "炬象未来",
     "navLinks": [ "时代浪潮", "五维罗盘", "课程模块", "合作流程" ],
     "contactBtn": "立即咨询"
   },
   "hero": {
-    "title": "AI赋能，引爆您的电商增长",
+    "title": "AI赋能，新时代的企业增长手册",
     "subtitle": "我们提供新一代电商与跨境贸易的增长引擎。这不只是一个课程，而是一套能与您企业深度结合，打造未来核心竞争力的系统性解决方案。",
-    "ctaBtn": "开启您的AI定制之旅"
+    "ctaBtn": "开启您的AI定制方案之旅"
   },
   "vision": {
     "title": "从\"流量思维\"到\"智能效率思维\"的时代跃迁",
@@ -192,12 +192,12 @@
         "companyPlaceholder": "公司名称",
         "emailPlaceholder": "您的邮箱",
         "needsPlaceholder": "您的主要痛点或需求...",
-        "optimizeBtn": "✨ AI 帮我优化需求描述",
+        "optimizeBtn": "✨ AI 帮我优化需求描述 ✨ ",
         "submitBtn": "提交并获取免费咨询"
     }
   },
   "footer": {
-    "copyright": "© 2024 AI+电商增长引擎. 保留所有权利。",
+    "copyright": "© 炬象未来. 保留所有权利。",
     "contactInfo": "联系方式: contact@ai-growth-engine.com | 电话: 400-123-4567"
   },
   "settingsModal": {
