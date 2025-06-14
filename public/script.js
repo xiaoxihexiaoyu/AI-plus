@@ -240,48 +240,6 @@ function initCounterObserver() {
  * Sets up event listeners for the entire application.
  */
 function initializeEventListeners() {
-    // API Settings Modal
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsModal = document.getElementById('settings-modal');
-    const settingsCloseBtn = document.getElementById('settings-close-btn');
-    const settingsSaveBtn = document.getElementById('settings-save-btn');
-    const apiKeyInput = document.getElementById('api-key-input');
-    const apiEndpointInput = document.getElementById('api-endpoint-input');
-    const apiModelInput = document.getElementById('api-model-input');
-
-    let apiSettings = {
-        key: localStorage.getItem('apiKey') || '',
-        endpoint: localStorage.getItem('apiEndpoint') || 'https://api.siliconflow.cn/v1/chat/completions',
-        model: localStorage.getItem('apiModel') || 'alibaba/qwen-long'
-    };
-
-    const loadSettingsIntoForm = () => {
-        apiKeyInput.value = apiSettings.key;
-        apiEndpointInput.value = apiSettings.endpoint;
-        apiModelInput.value = apiSettings.model;
-    };
-    const openSettingsModal = () => {
-        loadSettingsIntoForm();
-        settingsModal.classList.add('visible');
-    };
-    const closeSettingsModal = () => settingsModal.classList.remove('visible');
-    const saveSettings = () => {
-        apiSettings.key = apiKeyInput.value.trim();
-        apiSettings.endpoint = apiEndpointInput.value.trim();
-        apiSettings.model = apiModelInput.value.trim();
-        localStorage.setItem('apiKey', apiSettings.key);
-        localStorage.setItem('apiEndpoint', apiSettings.endpoint);
-        localStorage.setItem('apiModel', apiSettings.model);
-        closeSettingsModal();
-    };
-
-    settingsBtn.addEventListener('click', openSettingsModal);
-    settingsCloseBtn.addEventListener('click', closeSettingsModal);
-    settingsSaveBtn.addEventListener('click', saveSettings);
-    settingsModal.addEventListener('click', (e) => {
-        if (e.target === settingsModal) closeSettingsModal();
-    });
-
     // Compass Configurator
     initCompass();
 
@@ -305,6 +263,8 @@ function initCompass() {
     const recFocus = document.getElementById('rec-focus');
     const recContent = document.getElementById('rec-content');
     const recCombo = document.getElementById('rec-combo');
+    const generateBtn = document.getElementById('generate-recommendation-btn');
+    const generateSpinner = document.getElementById('generate-recommendation-spinner');
 
     const selections = { scale: null, audience: null, depth: null, duration: null, format: null };
     const scoreData = {
@@ -313,20 +273,11 @@ function initCompass() {
         depth: { '认知普及': [3, 1, 1], '工具应用': [1, 5, 4], '战略整合': [5, 2, 3] },
     };
 
-    const updateRecommendation = async () => {
+    const updateChart = () => {
         if (!Object.values(selections).every(val => val !== null)) {
-            recPlaceholder.classList.remove('hidden');
-            recDetails.classList.add('hidden');
-            recLoading.classList.add('hidden');
-            recError.classList.add('hidden');
-            updateChart([2, 2, 2]);
+            updateChartData([2, 2, 2]);
             return;
         }
-
-        recPlaceholder.classList.add('hidden');
-        recDetails.classList.add('hidden');
-        recError.classList.add('hidden');
-        recLoading.classList.remove('hidden');
 
         try {
             let combinedScores = [0, 0, 0];
@@ -337,11 +288,30 @@ function initCompass() {
             if (selections.duration === '长期顾问' || selections.depth === '战略整合') combinedScores[0] = Math.min(6, combinedScores[0] + 1);
             if (selections.duration === '两天' || selections.depth === '工具应用') combinedScores[1] = Math.min(6, combinedScores[1] + 1.5);
             if (selections.scale === '小微企业' || selections.depth === '工具应用') combinedScores[2] = Math.min(6, combinedScores[2] + 1);
-            updateChart(combinedScores);
+            updateChartData(combinedScores);
         } catch(e) {
             console.error("Error calculating scores: ", e);
-            updateChart([2,2,2]);
+            updateChartData([2,2,2]);
         }
+    };
+
+    const generateRecommendation = async () => {
+        // 检查是否所有维度都已选择
+        if (!Object.values(selections).every(val => val !== null)) {
+            recError.classList.remove('hidden');
+            recErrorMsg.textContent = '请先完成所有维度的选择';
+            setTimeout(() => {
+                recError.classList.add('hidden');
+            }, 3000);
+            return;
+        }
+
+        recPlaceholder.classList.add('hidden');
+        recDetails.classList.add('hidden');
+        recError.classList.add('hidden');
+        recLoading.classList.remove('hidden');
+        generateBtn.disabled = true;
+        generateSpinner.classList.remove('hidden');
 
         const prompt = `你是一位顶级的AI+电商培训方案专家。一位潜在客户提供了以下信息：
         - 企业规模: ${selections.scale}, 培训对象: ${selections.audience}, 期望内容深度: ${selections.depth}, 期望时间长度: ${selections.duration}, 期望培训形式: ${selections.format}
@@ -363,6 +333,9 @@ function initCompass() {
             recErrorMsg.textContent = error.message.includes('API配置不完整') ? error.message : CONFIG.compass.resultCard.error;
             recLoading.classList.add('hidden');
             recError.classList.remove('hidden');
+        } finally {
+            generateBtn.disabled = false;
+            generateSpinner.classList.add('hidden');
         }
     };
 
@@ -372,15 +345,20 @@ function initCompass() {
             selections[dimension] = value;
             document.querySelectorAll(`.compass-btn[data-dimension="${dimension}"]`).forEach(btn => btn.classList.remove('active'));
             e.target.classList.add('active');
-            updateRecommendation();
+            updateChart(); // 仅更新图表，不生成方案
         }
     });
 
-    updateRecommendation(); // Initial call
+    // 添加生成按钮的点击事件
+    generateBtn.addEventListener('click', generateRecommendation);
+
+    // 初始化图表
+    updateChart();
 }
 
 
-function updateChart(data) {
+// 修改图表更新函数名称，以避免冲突
+function updateChartData(data) {
     const chartData = {
         labels: ['战略思维', '工具应用', '效率提升'],
         datasets: [{
@@ -432,7 +410,7 @@ function initModules() {
                     <h4 class="font-bold text-lg text-${m.color}-700">${m.title}</h4>
                     <p class="text-sm text-slate-500 mt-2 flex-grow">${m.desc}</p>
                     <div class="text-right mt-4">
-                        <button class="ai-deep-dive-btn text-sm text-sky-600 font-semibold hover:text-sky-800 transition-colors" data-title="${m.title}" data-desc="${m.desc}">
+                        <button class="ai-deep-dive-btn text-sm text-sky-600 font-semibold hover:text-sky-800 transition-colors" data-title="${m.title}" data-desc="${m.desc}" data-details="${m.details || ''}">
                             ${CONFIG.modules.modal.deepDiveBtn}
                         </button>
                     </div>
@@ -452,28 +430,21 @@ function initModules() {
 
     moduleGrid.addEventListener('click', async (e) => {
         if (e.target.classList.contains('ai-deep-dive-btn')) {
-            const { title, desc } = e.target.dataset;
+            const { title, desc, details } = e.target.dataset;
             moduleModal.classList.add('visible');
             modalTitle.textContent = title;
             modalTextContent.classList.add('hidden');
             modalError.classList.add('hidden');
-            modalLoading.classList.remove('hidden');
-
-            const prompt = `你是一名资深的AI电商培训师。请针对以下课程模块，生成一个简短但具体的“内容亮点”作为展示示例，用来吸引潜在学员。
-            - 课程标题: "${title}"
-            - 课程描述: "${desc}"
-            你的任务是，不要只是重复描述，而是要提供一个具体的、能体现课程价值的例子。例如，如果是关于文案的，可以给一个“优化前/后”的对比；如果是关于战略的，可以提出一个发人深省的思考题。内容要精炼、专业、有吸引力，适合在弹窗中展示。直接输出内容本身即可。`;
-
-            try {
-                const result = await callBackendProxy(prompt);
-                modalTextContent.textContent = result;
-                modalLoading.classList.add('hidden');
+            modalLoading.classList.add('hidden');
+            
+            // 直接显示静态内容，不调用AI生成
+            if (details) {
+                modalTextContent.textContent = details;
                 modalTextContent.classList.remove('hidden');
-            } catch (error) {
-                console.error("Error fetching module deep dive:", error);
-                modalErrorMsg.textContent = error.message.includes('API配置不完整') ? error.message : CONFIG.modules.modal.error;
-                modalLoading.classList.add('hidden');
-                modalError.classList.remove('hidden');
+            } else {
+                // 如果没有预设详情，显示课程描述
+                modalTextContent.textContent = desc;
+                modalTextContent.classList.remove('hidden');
             }
         }
     });

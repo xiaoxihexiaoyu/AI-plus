@@ -20,9 +20,6 @@
             <div class="hidden md:flex space-x-8 items-center" id="nav-links-desktop">
                 <!-- Nav links will be populated by JS -->
                 <a href="#contact" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-full transition-transform hover:scale-105" data-config-key="header.contactBtn"></a>
-                <button id="settings-btn" class="settings-btn text-slate-500 hover:text-sky-600 p-2 rounded-full">
-                    <svg class="settings-btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.108 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.27.96-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.78.93l-.15.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.02-.398-1.11-.94l-.149-.894c-.07-.424-.384-.764-.78-.93-.398-.164-.855-.142-1.205.108l-.737.527a1.125 1.125 0 0 1-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.93l.15-.893Z" /></svg>
-                </button>
             </div>
             <div class="md:hidden">
                 <a href="#contact" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-full transition-transform hover:scale-105 text-sm" data-config-key="header.contactBtn"></a>
@@ -81,7 +78,15 @@
                 </div>
                 <div class="max-w-6xl mx-auto">
                     <div class="grid lg:grid-cols-2 gap-8 lg:gap-12">
-                        <div id="compass-controls" class="space-y-6"></div>
+                        <div>
+                            <div id="compass-controls" class="space-y-6"></div>
+                            <div class="mt-6 text-center">
+                                <button id="generate-recommendation-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-8 rounded-full transition-transform hover:scale-105 flex items-center justify-center gap-2 mx-auto">
+                                    <span data-config-key="compass.resultCard.generateBtn">生成个性化方案</span>
+                                    <span id="generate-recommendation-spinner" class="spinner-sm hidden"></span>
+                                </button>
+                            </div>
+                        </div>
                         <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg border border-slate-200 flex flex-col">
                             <h3 class="text-2xl font-bold text-slate-800 mb-4 text-center" data-config-key="compass.resultCard.title"></h3>
                             <div id="recommendation-output" class="text-slate-600 mb-6 space-y-4 flex-grow min-h-[250px] flex flex-col justify-center">
@@ -188,30 +193,6 @@
             </div>
             <div class="mt-6 text-right">
                 <button id="modal-close-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-6 rounded-full" data-config-key="modules.modal.closeBtn"></button>
-            </div>
-        </div>
-    </div>
-
-    <div id="settings-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 class="text-2xl font-bold text-slate-800 mb-6" data-config-key="settingsModal.title"></h3>
-            <div class="space-y-4">
-                <div>
-                    <label for="api-key-input" class="block text-sm font-medium text-slate-700" data-config-key="settingsModal.apiKeyLabel"></label>
-                    <input type="password" id="api-key-input" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" data-config-key-placeholder="settingsModal.apiKeyPlaceholder">
-                </div>
-                <div>
-                    <label for="api-endpoint-input" class="block text-sm font-medium text-slate-700" data-config-key="settingsModal.endpointLabel"></label>
-                    <input type="text" id="api-endpoint-input" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" data-config-key-placeholder="settingsModal.endpointPlaceholder">
-                </div>
-                <div>
-                    <label for="api-model-input" class="block text-sm font-medium text-slate-700" data-config-key="settingsModal.modelLabel"></label>
-                    <input type="text" id="api-model-input" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" data-config-key-placeholder="settingsModal.modelPlaceholder">
-                </div>
-            </div>
-            <div class="mt-6 flex justify-end gap-4">
-                <button id="settings-close-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-6 rounded-full" data-config-key="settingsModal.cancelBtn"></button>
-                <button id="settings-save-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded-full" data-config-key="settingsModal.saveBtn"></button>
             </div>
         </div>
     </div>
