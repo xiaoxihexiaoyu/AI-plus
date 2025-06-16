@@ -1,16 +1,17 @@
 :root {
-    --color-background: #0a0a0a;
+    --color-background: #0c0c0e;
     --color-card: rgba(20, 20, 20, 0.6);
     --color-primary: #0077ed;
     --color-secondary: #6e6e73;
-    --color-text: #ffffff;
-    --color-text-secondary: rgba(255, 255, 255, 0.7);
+    --color-text: rgba(255, 255, 255, 0.95);
+    --color-text-secondary: rgba(255, 255, 255, 0.75);
     --color-border: rgba(255, 255, 255, 0.05);
     --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.3);
-    --blur-effect: blur(20px);
+    --blur-effect: blur(8px);
     --glow-effect: 0 0 15px rgba(0, 119, 237, 0.4);
     --glass-text-input: rgba(30, 30, 30, 0.6);
-    --glass-text-input-blur: blur(30px);
+    --glass-text-input-blur: blur(10px);
+    --glass-btn-blur: blur(5px);
 }
 
 body {
@@ -265,23 +266,63 @@ button:hover, .rounded-full:hover {
 }
 
 .compass-btn {
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.6);
-    background: rgba(30, 30, 35, 0.75) !important;
-    backdrop-filter: var(--blur-effect);
-    -webkit-backdrop-filter: var(--blur-effect);
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    background: rgba(30, 30, 35, 0.5);
+    backdrop-filter: var(--glass-btn-blur);
+    -webkit-backdrop-filter: var(--glass-btn-blur);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--color-text-secondary);
+    transition: all 0.2s ease;
+    min-width: 100px;
+    text-align: center;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    height: 38px;
+}
+
+.compass-btn:hover {
+    background: rgba(40, 40, 45, 0.7);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .compass-btn.active {
-    background: linear-gradient(135deg, #0077ed, #0055cc) !important;
+    background: linear-gradient(135deg, rgba(0, 119, 237, 0.7), rgba(0, 85, 204, 0.7));
     color: white !important;
     transform: scale(1.05);
     box-shadow: 0 8px 20px rgba(0, 119, 237, 0.3), 0 3px 10px rgba(0, 0, 0, 0.2);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 优化五维罗盘按钮容器 */
+#compass-controls > div {
+    margin-bottom: 26px;
+    background: rgba(20, 20, 25, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+#compass-controls > div:last-child {
+    margin-bottom: 16px;
+}
+
+#compass-controls > div > h3 {
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 8px;
+    color: #3b82f6;
+}
+
+#compass-controls .flex.flex-wrap.gap-3 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px !important;
+    margin-top: 12px;
 }
 
 .tooltip-container {
@@ -291,31 +332,58 @@ button:hover, .rounded-full:hover {
 
 .tooltip-text {
     visibility: hidden;
-    width: 240px;
-    background-color: rgba(20, 20, 20, 0.9);
+    width: 300px;
+    background-color: rgba(15, 15, 20, 0.95);
     backdrop-filter: var(--blur-effect);
     -webkit-backdrop-filter: var(--blur-effect);
     color: #fff;
-    text-align: center;
+    text-align: left;
     border-radius: 12px;
-    padding: 8px 12px;
+    padding: 12px 16px;
     position: absolute;
     z-index: 10;
     bottom: 125%;
     left: 50%;
-    margin-left: -120px;
+    margin-left: -150px;
     opacity: 0;
-    transition: opacity 0.3s;
+    transition: opacity 0.3s, transform 0.3s;
     font-size: 13px;
     line-height: 1.6;
     pointer-events: none;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: translateY(10px);
+    white-space: pre-line;
 }
 
 .tooltip-container:hover .tooltip-text {
     visibility: visible;
     opacity: 1;
+    transform: translateY(0);
+}
+
+/* 增强tooltip内容样式 */
+.tooltip-text strong {
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+/* 针对五维罗盘选项定制的tooltip样式 */
+#compass-controls .tooltip-text {
+    width: 340px;
+    margin-left: -170px;
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+#compass-controls .tooltip-container {
+    display: inline-block;
+}
+
+/* 特殊标记样式 */
+#compass-controls .tooltip-text [class^="【"] {
+    font-weight: 600;
+    color: #3b82f6;
 }
 
 /* 滤镜颜色组 */

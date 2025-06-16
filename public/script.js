@@ -276,6 +276,26 @@ function initializeEventListeners() {
 
 // --- Feature-Specific Logic ---
 
+/**
+ * 简单的Markdown解析函数，支持基本的粗体、斜体和换行
+ * @param {string} text - 要解析的Markdown文本
+ * @returns {string} 解析后的HTML
+ */
+function parseMarkdown(text) {
+    if (!text) return '';
+    
+    // 处理粗体 **text**
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // 处理斜体 *text*
+    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // 处理换行
+    text = text.replace(/\n/g, '<br>');
+    
+    return text;
+}
+
 function initCompass() {
     const buttons = document.querySelectorAll('.compass-btn');
     const generateBtn = document.getElementById('generate-recommendation-btn');
@@ -296,7 +316,7 @@ function initCompass() {
     
     // Setup initial empty chart
     updateChartData({
-        labels: ['营销效能', '运营效率', '战略高度'],
+        labels: ['战略规划', '提产增效', '创新赋能'],
         datasets: [{
             data: [0, 0, 0],
             backgroundColor: 'rgba(0, 119, 237, 0.2)',
@@ -330,8 +350,8 @@ function initCompass() {
         });
     });
 
-    // 特殊处理format维度的按钮样式
-    document.querySelectorAll('.compass-btn[data-dimension="format"]').forEach(btn => {
+    // 特殊处理approach维度的按钮样式
+    document.querySelectorAll('.compass-btn[data-dimension="approach"]').forEach(btn => {
         btn.style.minWidth = '120px';
         btn.style.textAlign = 'center';
     });
@@ -353,23 +373,86 @@ function initCompass() {
         recError.classList.add('hidden');
         recLoading.classList.remove('hidden');
         
+        // 计算三个维度的评分 - 更科学的算法
+        const scores = calculateDimensionScores(userSelections);
+        const strategicScore = scores.strategicScore;
+        const efficiencyScore = scores.efficiencyScore;
+        const innovationScore = scores.innovationScore;
+        
+        // 整合数据
+        const chartData = [strategicScore, efficiencyScore, innovationScore];
+        
+        // 从CONFIG中获取可用的课程模块
+        const availableModules = (CONFIG.modules?.list || []).map(m => ({
+            title: m.title,
+            category: m.category,
+            desc: m.desc
+        }));
+
+        // 添加时间戳和随机因素以增加多样性
+        const timestamp = Date.now();
+        const randomFactor = Math.random().toString(36).substring(2, 10);
+
+        const prompt = `
+        **角色与目标:**
+        你是一位名为"炬象未来"的首席AI战略顾问。你的风格是：高瞻远瞩、一针见血、赋能于人。你的任务不是简单地回答问题，而是通过深刻的洞察，激发客户拥抱AI变革的决心和信心。
+        
+        **多样性要求:**
+        非常重要！请确保你的回复具有原创性和创造性。即使面对相同的客户选择，也要提供不同角度的见解和表达方式。避免使用模板化、固定的表述。确保每次回复都是独特的。当前时间戳: ${timestamp}，随机因子: ${randomFactor}
+
+        **客户背景:**
+        一位潜在客户刚刚完成了我们的"五维罗盘"诊断，以下是他们的选择：
+        - 组织规模: ${userSelections.scale}
+        - 培训对象: ${userSelections.target}
+        - 核心目标: ${userSelections.focus}
+        - 培训周期: ${userSelections.duration}
+        - 学习方式: ${userSelections.approach}
+
+        **可用资源:**
+        我们有一个"课程模块弹药库"，你可以从中为客户挑选和组合。这是当前的模块列表：
+        \`\`\`json
+        ${JSON.stringify(availableModules, null, 2)}
+        \`\`\`
+
+        **AI分析结果:**
+        基于客户的五维选择，系统已生成以下三个维度的AI化转型评分：
+        - 战略规划：${strategicScore}/100分
+        - 提产增效：${efficiencyScore}/100分
+        - 创新赋能：${innovationScore}/100分
+
+        **任务与输出格式:**
+        请根据上述评分结果和客户的五维选择，为其生成一份高度个性化的AI培训方案建议。你的回答必须是一个严格的JSON对象，包含以下三个键，所有内容必须使用简体中文：
+
+        1.  "focus": (建议焦点)
+            -   用激励人心的语言，一针见血地指出这类客户在AI时代面临的最大机遇和核心挑战。
+            -   重点关注客户在评分最高的维度(战略规划/提产增效/创新赋能)上如何进一步提升。
+            -   文字要精炼、有力，像一位战略家在指点江山。不要使用陈词滥调。不要超过80个字。
+            -   避免使用"小微企业正站在AI变革的风口"这类常见表述，使用更加独特、个性化的表达。
+
+        2.  "content": (内容侧重)
+            -   根据三个维度的评分情况，重点关注得分最高的两个维度，提出具体能力建设建议。
+            -   请点出2-3个关键的学习要点，让客户明白培训的核心价值。使用具体、形象的描述，不要泛泛而谈。不要超过100个字。
+            -   如有得分较低的维度，也应提出针对性的提升建议。
+
+        3.  "combination": (推荐组合)
+            -   这是最重要的部分。请从上面提供的"课程模块弹药库"中，为客户精心挑选2-3个最匹配的模块，挑选时要考虑三个维度的评分情况。
+            -   给这个组合起一个响亮的、有吸引力的名字，能反映客户的行业特点和需求痛点。
+            -   格式为："**方案名称**：[模块1的标题] + [模块2的标题]。**推荐理由**：[简要说明为什么这样组合能解决他们的核心问题，以及如何提升三个维度的能力]"。
+        `;
+
         try {
-            // Simulate AI processing with a delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const parsedJson = await callBackendProxy(prompt, true);
             
-            // Generate a deterministic recommendation based on selections
-            const recommendation = generateDeterministicRecommendation(userSelections);
+            // Update UI with recommendation - 使用parseMarkdown函数解析Markdown格式
+            recFocus.innerHTML = parseMarkdown(parsedJson.focus);
+            recContent.innerHTML = parseMarkdown(parsedJson.content);
+            recCombo.innerHTML = parseMarkdown(parsedJson.combination); // 修正：使用正确的属性名 combination 而不是 combo
             
-            // Update UI with recommendation
-            recFocus.textContent = recommendation.focus;
-            recContent.textContent = recommendation.content;
-            recCombo.textContent = recommendation.combo;
-            
-            // Update chart
+            // 更新图表
             updateChartData({
-                labels: ['营销效能', '运营效率', '战略高度'],
+                labels: ['战略规划', '提产增效', '创新赋能'],
                 datasets: [{
-                    data: recommendation.chartData,
+                    data: chartData,
                     backgroundColor: 'rgba(0, 119, 237, 0.2)',
                     borderColor: 'rgba(0, 119, 237, 0.8)',
                     borderWidth: 2,
@@ -392,52 +475,111 @@ function initCompass() {
         }
     };
     
-    // Simple deterministic recommendation generator
-    const generateDeterministicRecommendation = (selections) => {
-        // Map scale to focus area
-        const scaleMap = {
-            '小微企业': '建议聚焦于快速提升营销效能，以最小成本获取最大效果。',
-            '中型企业': '建议聚焦于运营流程优化，提升人效和组织协同能力。',
-            '大型企业': '建议聚焦于战略层面的AI整合，构建企业级数据与AI能力。'
-        };
-        
-        // Map audience to content emphasis
-        const audienceMap = {
-            '决策层/高管': '内容应以战略视野和变革管理为主，辅以实际案例分析。',
-            '运营/执行层': '内容应以实操工具和流程优化为主，强调即学即用。',
-            '全体员工': '内容应兼顾AI认知普及和基础工具应用，培养全员AI思维。'
-        };
-        
-        // Generate combo recommendation based on depth and duration
-        const getCombo = (depth, duration) => {
-            if (depth === '认知普及' && duration === '半天') {
-                return '推荐"AI时代的电商顶层设计"+"AIGC重塑品牌内容生态"组合。';
-            } else if (depth === '工具应用' && (duration === '一天' || duration === '两天')) {
-                return '推荐"AI驱动爆款文案与Listing优化"+"Midjourney/SD商业级视觉应用"+"AI客服与售后流程自动化"组合。';
-            } else if (depth === '战略整合' && duration === '长期顾问') {
-                return '推荐完整的"AI赋能电商增长引擎"体系，包含战略、工具、流程三大模块的全面整合。';
-            } else {
-                return '推荐根据您的具体业务场景，定制3-5个核心模块的组合方案。';
-            }
-        };
-        
-        // Generate chart data based on selections
-        const chartData = [
-            selections.scale === '小微企业' ? 90 : (selections.scale === '中型企业' ? 70 : 50),
-            selections.audience === '运营/执行层' ? 90 : (selections.audience === '全体员工' ? 70 : 50),
-            selections.depth === '战略整合' ? 90 : (selections.depth === '工具应用' ? 50 : 30)
-        ];
-        
-        return {
-            focus: scaleMap[selections.scale] || '建议聚焦于整体AI能力提升，平衡战略与执行。',
-            content: audienceMap[selections.audience] || '内容应平衡理论与实践，覆盖多层级人员需求。',
-            combo: getCombo(selections.depth, selections.duration),
-            chartData
-        };
-    };
-    
     // Add event listener to generate button
     generateBtn.addEventListener('click', generateRecommendation);
+}
+
+/**
+ * 计算三个维度的评分，基于五维罗盘选择
+ * 更科学的算法，考虑所有五个维度对每个评分的影响
+ * @param {Object} selections - 用户的五维选择
+ * @returns {Object} - 包含三个维度评分的对象
+ */
+function calculateDimensionScores(selections) {
+    // 战略规划得分计算
+    let strategicScore = 0;
+    
+    // 组织规模对战略规划的影响（25%权重）
+    if (selections.scale === '大型企业') strategicScore += 25;
+    else if (selections.scale === '中型企业') strategicScore += 18;
+    else strategicScore += 10; // 小微企业
+    
+    // 培训对象对战略规划的影响（30%权重）
+    if (selections.target === '决策层/高管') strategicScore += 30;
+    else if (selections.target === '中层管理者') strategicScore += 20;
+    else strategicScore += 10; // 一线执行者
+    
+    // 核心目标对战略规划的影响（25%权重）
+    if (selections.focus === '能力建设') strategicScore += 25;
+    else if (selections.focus === '创新突破') strategicScore += 20;
+    else strategicScore += 15; // 效能提升
+    
+    // 培训周期对战略规划的影响（10%权重）
+    if (selections.duration === '持续赋能(3个月+)') strategicScore += 10;
+    else if (selections.duration === '系统课程(1-2周)') strategicScore += 7;
+    else strategicScore += 4; // 短期研讨(1-2天)
+    
+    // 学习方式对战略规划的影响（10%权重）
+    if (selections.approach === '案例驱动') strategicScore += 10;
+    else if (selections.approach === '理论导向') strategicScore += 8;
+    else strategicScore += 6; // 实战演练
+    
+    // 提产增效得分计算
+    let efficiencyScore = 0;
+    
+    // 组织规模对提产增效的影响（10%权重）
+    if (selections.scale === '中型企业') efficiencyScore += 10;
+    else if (selections.scale === '小微企业') efficiencyScore += 8;
+    else efficiencyScore += 6; // 大型企业
+    
+    // 培训对象对提产增效的影响（25%权重）
+    if (selections.target === '一线执行者') efficiencyScore += 25;
+    else if (selections.target === '中层管理者') efficiencyScore += 20;
+    else efficiencyScore += 10; // 决策层/高管
+    
+    // 核心目标对提产增效的影响（30%权重）
+    if (selections.focus === '效能提升') efficiencyScore += 30;
+    else if (selections.focus === '能力建设') efficiencyScore += 20;
+    else efficiencyScore += 15; // 创新突破
+    
+    // 培训周期对提产增效的影响（20%权重）
+    if (selections.duration === '系统课程(1-2周)') efficiencyScore += 20;
+    else if (selections.duration === '持续赋能(3个月+)') efficiencyScore += 18;
+    else efficiencyScore += 12; // 短期研讨(1-2天)
+    
+    // 学习方式对提产增效的影响（15%权重）
+    if (selections.approach === '实战演练') efficiencyScore += 15;
+    else if (selections.approach === '案例驱动') efficiencyScore += 12;
+    else efficiencyScore += 8; // 理论导向
+    
+    // 创新赋能得分计算
+    let innovationScore = 0;
+    
+    // 组织规模对创新赋能的影响（15%权重）
+    if (selections.scale === '中型企业') innovationScore += 15;
+    else if (selections.scale === '大型企业') innovationScore += 12;
+    else innovationScore += 10; // 小微企业
+    
+    // 培训对象对创新赋能的影响（15%权重）
+    if (selections.target === '中层管理者') innovationScore += 15;
+    else if (selections.target === '决策层/高管') innovationScore += 12;
+    else innovationScore += 10; // 一线执行者
+    
+    // 核心目标对创新赋能的影响（25%权重）
+    if (selections.focus === '创新突破') innovationScore += 25;
+    else if (selections.focus === '能力建设') innovationScore += 18;
+    else innovationScore += 12; // 效能提升
+    
+    // 培训周期对创新赋能的影响（25%权重）
+    if (selections.duration === '持续赋能(3个月+)') innovationScore += 25;
+    else if (selections.duration === '系统课程(1-2周)') innovationScore += 18;
+    else innovationScore += 10; // 短期研讨(1-2天)
+    
+    // 学习方式对创新赋能的影响（20%权重）
+    if (selections.approach === '实战演练') innovationScore += 20;
+    else if (selections.approach === '案例驱动') innovationScore += 15;
+    else innovationScore += 10; // 理论导向
+    
+    // 确保分数不超过100分
+    strategicScore = Math.min(100, Math.round(strategicScore));
+    efficiencyScore = Math.min(100, Math.round(efficiencyScore));
+    innovationScore = Math.min(100, Math.round(innovationScore));
+    
+    return {
+        strategicScore,
+        efficiencyScore,
+        innovationScore
+    };
 }
 
 function updateChartData(data) {
